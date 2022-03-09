@@ -3,7 +3,16 @@ const path = require('path');
 
 require('dotenv').config();
 
+//DB config 
+require('./database/config').dbConnection();
+
+
 const app = express();
+
+
+//Lectura y parseo del body
+app.use(express.json());
+
 
 //Node server
 const server = require('http').createServer(app);
@@ -15,6 +24,11 @@ require('./sockets/socket');
 
 //path publico
 const publichPath = path.resolve( __dirname, 'public' );
+
+//Rutas
+app.use( '/api/login', require('./routes/auth') );
+
+
 
 app.use(express.static(publichPath));
 
