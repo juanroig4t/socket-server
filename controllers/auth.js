@@ -1,32 +1,35 @@
-const { response } = require("express");
-const { validationResult } = require("express-validator");
-const Usuario = require("../models/usuario");
+const { response } = require('express');
 const bcrypt = require('bcryptjs');
-const { generarJWT } = require("../helpers/jwt");
 
-const crearUsuario = async (req, res = response) => {
+const Usuario = require('../models/usuario');
+const { generarJWT } = require('../helpers/jwt');
+const usuario = require('../models/usuario');
+
+
+const crearUsuario = async (req, res = response ) => {
 
     const { email, password } = req.body;
 
     try {
-        const existeEmail = await Usuario.findOne({email});
 
-        if (existeEmail) {
+        const existeEmail = await Usuario.findOne({ email });
+        if( existeEmail ) {
             return res.status(400).json({
                 ok: false,
-                msg: 'El correo ya esta registrado.'
+                msg: 'El correo ya está registrado'
             });
         }
-        const usuario = new Usuario( req.body);
 
-        //Encriptar password
+        const usuario = new Usuario( req.body );
+
+        // Encriptar contraseña
         const salt = bcrypt.genSaltSync();
-        usuario.password = bcrypt.hashSync(password, salt);
+        usuario.password = bcrypt.hashSync( password, salt );
 
         await usuario.save();
 
-        //Generar jwt
-        const token = await generarJWT( usuario.id);
+        // Generar mi JWT
+        const token = await generarJWT( usuario.id );
 
         res.json({
             ok: true,
@@ -34,73 +37,79 @@ const crearUsuario = async (req, res = response) => {
             token
         });
 
+
     } catch (error) {
         console.log(error);
-        return res.status(500).json({
-            ok : false,
-            msg: 'Hable con el administrador de BD'
+        res.status(500).json({
+            ok: false,
+            msg: 'Hable con el administrador'
         });
     }
-
-    
 }
 
-const login = async (req, res = response) => {
+const login = async ( req, res = response ) => {
 
     const { email, password } = req.body;
 
     try {
         
-        const usuarioDb = await Usuario.findOne({email});
-
-        if( !usuarioDb ) {
+        const usuarioDB = await Usuario.findOne({ email });
+        if ( !usuarioDB ) {
             return res.status(404).json({
-                ok : false,
+                ok: false,
                 msg: 'Email no encontrado'
             });
         }
 
-        //Validar password.
-        const validPassword = bcrypt.compareSync(password, usuarioDb.password );
-        if( !validPassword ) {
+        // Validar el password
+        const validPassword = bcrypt.compareSync( password, usuarioDB.password );
+        if ( !validPassword ) {
             return res.status(400).json({
-                ok : false,
-                msg: 'Contarseña no valida'
+                ok: false,
+                msg: 'La contraseña no es valida'
             });
         }
 
-        //Generar jwt
-        const token = await generarJWT( usuarioDb.id )
 
+        // Generar el JWT
+        const token = await generarJWT( usuarioDB.id );
+        
         res.json({
             ok: true,
-            usuarioDb,
+            usuario: usuarioDB,
             token
         });
+
 
     } catch (error) {
         console.log(error);
         return res.status(500).json({
-            ok : false,
-            msg: 'Hable con el administrador de BD'
-        });
+            ok: false,
+            msg: 'Hable con el administrador'
+        })
     }
 
 }
 
-const renewToken = async (req, res = response ) => {
+
+const renewToken = async( req, res = response) => {
+
     const uid = req.uid;
-    
+
+    // generar un nuevo JWT, generarJWT... uid...
     const token = await generarJWT( uid );
 
-    const usuarioDb = await Usuario.findById(uid);
+    // Obtener el usuario por el UID, Usuario.findById... 
+    const usuario = await Usuario.findById( uid );
 
     res.json({
         ok: true,
-        usuarioDb,
+        usuario,
         token
     });
+
 }
+
 
 module.exports = {
     crearUsuario,
